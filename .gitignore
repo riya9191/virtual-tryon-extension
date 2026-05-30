@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.local
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Node / Extension
+node_modules/
+dist/
+build/
+.vite/
+*.log
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+
+# Samples / eval outputs (keep folder, ignore contents)
+samples/eval-runs/
+samples/*.jpg
+samples/*.png
+!samples/.gitkeep
+
+# Secrets
+*.key
+*.pem
