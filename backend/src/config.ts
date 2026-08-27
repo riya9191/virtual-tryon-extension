@@ -1,5 +1,7 @@
 import "dotenv/config";
 
+import { parseAllowedHosts } from "./services/url-guard.js";
+
 export type ProviderName = "mock" | "gemini" | "huggingface";
 
 export type AppConfig = {
@@ -13,8 +15,12 @@ export type AppConfig = {
   hfDenoiseSteps: number;
   useMockProvider: boolean;
   allowedOrigins: string[];
+  allowedImageHosts: string[];
   maxImageBytes: number;
   maxImageSide: number;
+  fetchTimeoutMs: number;
+  cacheMaxEntries: number;
+  cacheTtlMs: number;
 };
 
 export function getConfig(): AppConfig {
@@ -36,8 +42,12 @@ export function getConfig(): AppConfig {
       .split(",")
       .map((origin) => origin.trim())
       .filter(Boolean),
+    allowedImageHosts: parseAllowedHosts(process.env.ALLOWED_IMAGE_HOSTS),
     maxImageBytes: Number(process.env.MAX_IMAGE_BYTES ?? 8 * 1024 * 1024),
     maxImageSide: Number(process.env.MAX_IMAGE_SIDE ?? 1024),
+    fetchTimeoutMs: Number(process.env.FETCH_TIMEOUT_MS ?? 15_000),
+    cacheMaxEntries: Number(process.env.CACHE_MAX_ENTRIES ?? 32),
+    cacheTtlMs: Number(process.env.CACHE_TTL_MS ?? 60 * 60 * 1000),
   };
 }
 

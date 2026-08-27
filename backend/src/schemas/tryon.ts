@@ -22,5 +22,6 @@ export type TryOnResponse = {
   prompt_used: string;
   latency_ms: number;
   provider: string;
+  cached: boolean;
 };
 

@@ -7,7 +7,7 @@ import { tryOnRequestSchema } from "./schemas/tryon.js";
 import { TryOnService } from "./services/tryon-service.js";
 
 export function buildApp(config: AppConfig = getConfig()): FastifyInstance {
-  const app = Fastify({ logger: true });
+  const app = Fastify({ logger: process.env.NODE_ENV !== "test" });
   const service = new TryOnService(config);
 
   app.register(cors, {
@@ -17,13 +17,28 @@ export function buildApp(config: AppConfig = getConfig()): FastifyInstance {
     credentials: true,
   });
 
-  app.setErrorHandler((error: unknown, _request, reply) => {
+  app.setErrorHandler((error: unknown, request, reply) => {
     if (error instanceof ZodError) {
       reply.status(400).send({ detail: error.issues.map((issue) => issue.message).join("; ") });
       return;
     }
 
-    const message = error instanceof Error ? error.message : "Unknown backend error";
+    request.log.error({ err: error }, "try-on request failed");
+
+    // Errors that carry their own status (e.g. a rejected product image URL)
+    // are client mistakes; anything else is treated as an upstream failure.
+    const explicit = (error as { statusCode?: unknown })?.statusCode;
+    if (typeof explicit === "number" && explicit >= 400 && explicit < 500) {
+      reply.status(explicit).send({ detail: toMessage(error) });
+      return;
+    }
+
+    if (error instanceof Error && error.name === "TimeoutError") {
+      reply.status(504).send({ detail: "product image fetch timed out" });
+      return;
+    }
+
+    const message = toMessage(error);
     const statusCode = message.includes("image") || message.includes("base64") ? 400 : 502;
     reply.status(statusCode).send({ detail: message });
   });
@@ -41,4 +56,8 @@ export function buildApp(config: AppConfig = getConfig()): FastifyInstance {
   });
 
   return app;
+}
+
+function toMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unknown backend error";
 }
